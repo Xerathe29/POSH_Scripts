@@ -22,6 +22,8 @@
  .Example   
    Format-Certificate -CertPath C:\temp\CER -KeyPath C:\temp\KEY
 #>
+
+
 function Format-Certificate {
     [CmdletBinding()]
     param(
