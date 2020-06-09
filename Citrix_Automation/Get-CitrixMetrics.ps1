@@ -1,28 +1,65 @@
 <#
+ .NOTES
+    Version  : 1.0
+    Author   : Eshton Brogan & Sid Johnston
+    Created  : 08 June 2020
+ 
+ .SYNOPSIS
+  Gathers connection & session API data from specified Citrix Delivery Controllers and outputs the results to the console.
 
-Gathers connection & session API data from specified Ctrix Delivery Controllers and outputs the results to the console
-            
-    Version : 1.0
-    Author  : Eshton Brogan & Sid Johnston
-    Created : 08 June 2020
+ .DESCRIPTION
+  Utilizing user-provided credentials and configuration CSV, this function first validates that the delivery controller(s) in the
+  user-provided CSV have associated host file entries and applies them if they are missing. Then, the raw API data is pulled from
+  each delivery controller and filtered. This filtered data is stored in a PSCustomObject for later use. If for whatever reason,
+  a delivery controller is unreachable, a message will be displayed on the console. Finally, once all applicable delivery
+  controllers have been contacted, the contents of each PSCustomObject created from the delivery controller data will be displayed
+  on the console.
 
- .Synopsis
-  Placeholder
+  NOTE: In order for host file validation to occur, the user must run this function in an elevated PowerShell session.
 
- .Description
-  Placeholder
+ .PARAMETER Credential
+  Specifies the credentials used to connect to the delivery controller(s).
 
- .Parameter X
-  Placeholder
+ .PARAMETER SiteConfig
+  Specifies the path to the CSV which contains the site name, delivery controller FQDN, and delivery controller IP address data. The
+  labels for this data must be name, ddc, and ip, respectively. All data must be in String format.
+  
+  EXAMPLE:
+    name    ddc               ip
+    site01  ddc01.site01.com  10.10.1.1
+    site02  ddc01.site02.com  10.10.2.1 
 
- .Example
-  Placeholder
+ .EXAMPLE
 
- .Example
-  Placeholder
+  PS> Get-CitrixMetrics -Credential sa.first.last -SiteConfig 'C:\temp\Site_Config.csv'
+  Windows PowerShell credential request
+  Enter your credentials.
+  Password for user sa.first.last: *****************
 
- .Example
-  Placeholder
+  ======Validating host file entries for Delivery Controllers======
+  10.10.1.1      ddc01.site01.com - not adding; already in hosts file
+  10.10.2.1      ddc01.site02.com - adding to hosts file...done
+
+  Testing that ddc01.site01.com is online.
+  Testing that ddc01.site02.com is online.
+
+  site01
+
+  Name                           Value
+  ----                           -----
+  Total_Connections_Last_24_HRS  23
+  Total_Connections_Last_7_DAYS  432
+  Active_Sessions                15
+  Peak_Sessions_Last_24_HRS      21
+
+  site02
+
+  Name                           Value
+  ----                           -----
+  Total_Connections_Last_24_HRS  10
+  Total_Connections_Last_7_DAYS  52
+  Active_Sessions                5
+  Peak_Sessions_Last_24_HRS      9
 #>
 
 function Get-CitrixMetrics {
@@ -87,6 +124,7 @@ function Get-CitrixMetrics {
             }
         }
 
+        $nl
         # Ensure hosts file is configured for connections to Delivery Controllers.
         Write-Host "======Validating host file entries for Delivery Controllers======" -ForegroundColor Cyan
         foreach ($site in $sites) {
