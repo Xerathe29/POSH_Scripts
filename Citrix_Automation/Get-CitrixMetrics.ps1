@@ -30,7 +30,10 @@ function Get-CitrixMetrics {
     param (
         [Parameter(Mandatory=$true)]
         [System.Management.Automation.PSCredential]
-        $Credential
+        $Credential,
+        [Parameter(Mandatory=$true)]
+        [String]
+        $SiteConfig
     )
 
     begin {
@@ -68,12 +71,14 @@ function Get-CitrixMetrics {
             }
         }
 
-        $sites = ("Site Label 1", "Site Label 2")
+        $SiteConfig = $PSBoundParameters.SiteConfig
+        $sites = Import-Csv -Path "$SiteConfig"
+        
         $metrics = @{}
 
         foreach ($site in $sites) {
             $metrics += @{
-                $site = @{
+                $site.name = @{
                     Total_Connections_Last_24_HRS = ""
                     Total_Connections_Last_7_DAYS = ""
                     Peak_Sessions_Last_24_HRS = ""
@@ -84,28 +89,25 @@ function Get-CitrixMetrics {
 
         # Ensure hosts file is configured for connections to Delivery Controllers.
         Write-Host "======Validating host file entries for Delivery Controllers======" -ForegroundColor Cyan
-        Set-HostFile -IPaddr "10.10.10.1" -Hostname "Site1DDC.FQDN"
-        Set-HostFile -IPaddr "10.10.11.1" -Hostname "Site2DDC.FQDN"
-        $nl
-        # Set up DDC targets.
-        $ddc01 = "Site1ddc.FQDN"
-        $ddc02 = "Site2ddc.FQDN"
-        $_ddcs = @($ddc01,$ddc02)
+        foreach ($site in $sites) {
+            Set-HostFile -IPaddr $site.ip -Hostname $site.ddc
+        }
+        $nl        
     }
 
     process {
-        foreach ($ddc in $_ddcs) {
+        foreach ($site in $sites) {
             
             Try {
-                Write-Host "Testing that $ddc is online."
-                Test-Connection -ComputerName $ddc -Count 1 -ErrorAction Stop | Out-Null
+                Write-Host "Testing that $($site.ddc) is online."
+                Test-Connection -ComputerName $site.ddc -Count 1 -ErrorAction Stop | Out-Null
 
                 Try {
                     $asp = ($ddc).Remove(5)
                     # Gathering raw API data from DDC
-                    $sessionSum = Invoke-RestMethod -Uri "http://$ddc/Citrix/Monitor/OData/v1/Data/SessionActivitySummaries" -Credential $Credential -ErrorAction Stop
-                    $connections = Invoke-RestMethod -Uri "http://$ddc/Citrix/Monitor/OData/v1/Data/Connections" -Credential $Credential -ErrorAction Stop
-                    $sessions = Invoke-RestMethod -Uri "http://$ddc/Citrix/Monitor/OData/v1/Data/Sessions" -Credential $Credential -ErrorAction Stop
+                    $sessionSum = Invoke-RestMethod -Uri "http://$($site.ddc)/Citrix/Monitor/OData/v1/Data/SessionActivitySummaries" -Credential $Credential -ErrorAction Stop
+                    $connections = Invoke-RestMethod -Uri "http://$($site.ddc)/Citrix/Monitor/OData/v1/Data/Connections" -Credential $Credential -ErrorAction Stop
+                    $sessions = Invoke-RestMethod -Uri "http://$($site.ddc)/Citrix/Monitor/OData/v1/Data/Sessions" -Credential $Credential -ErrorAction Stop
                     # Date formatting
                     $currentDate = Get-Date -Format "yyyy-MM-dd"
                     $currentDate = -join($currentDate, "*")
@@ -119,8 +121,8 @@ function Get-CitrixMetrics {
                     $connectionDate24 = $connections.Content.Properties | Where-Object { $_.LogonStartDate.InnerText -ge $last24Hours }
                     $connectionDateWeek = $connections.Content.Properties | Where-Object { $_.LogonStartDate.InnerText -ge $lastWeek }
                     # Setting counts for connections over 24hour/7day
-                    $metrics.$asp.Total_Connections_Last_24_HRS = ($connectionDate24).count
-                    $metrics.$asp.Total_Connections_Last_7_DAYS = ($connectionDateWeek).count
+                    $metrics.($site.name).Total_Connections_Last_24_HRS = ($connectionDate24).count
+                    $metrics.($site.name).Total_Connections_Last_7_DAYS = ($connectionDateWeek).count
                     # Selecting latest Peak Concurrent Sessions count over last 24 Hours
                     $conSession24 = $sessionSum.Content.Properties | Where-Object { $_.Granularity.InnerText -eq 1440 }
                     $summaryDate = (Get-Date).AddDays(-1)
@@ -131,17 +133,17 @@ function Get-CitrixMetrics {
                     foreach ($item in $conSession24) {
                         $peakCon24 += $item.ConcurrentSessionCount.InnerText
                     }
-                    $metrics.$asp.Peak_Sessions_Last_24_HRS - $peakCon24
+                    $metrics.($site.name).Peak_Sessions_Last_24_HRS - $peakCon24
                     # Creating Active Session Count array to extract latest active sessions
                     $currentSessions = $sessions.Content.Properties | Where-Object { $_.ConnectionState.InnerText -eq 5 }
-                    $metrics.$asp.Active_Sessions = $currentSessions.count
+                    $metrics.($site.name).Active_Sessions = $currentSessions.count
                 }
                 Catch {
-                    Write-Host -ForegroundColor Yellow "Error retrieving data from $ddc. Please check credentials."
+                    Write-Host -ForegroundColor Yellow "Error retrieving data from $($site.ddc). Please check credentials."
                 }
             }
             Catch [System.Net.NetworkInformation.PingException] {
-                Write-Warning "$ddc could not be contacted"
+                Write-Warning "$site.ddc could not be contacted"
             }
         }
     }
@@ -150,7 +152,7 @@ function Get-CitrixMetrics {
         $nl
         foreach ($site in $sites) {
             Write-Host -ForegroundColor Green "$site"
-            $metrics.$site | Format-Table
+            $metrics.($site.name) | Format-Table
         }
     }
 }
