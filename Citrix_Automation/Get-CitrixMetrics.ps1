@@ -143,7 +143,7 @@ function Get-CitrixMetrics {
                 }
             }
             Catch [System.Net.NetworkInformation.PingException] {
-                Write-Warning "$site.ddc could not be contacted"
+                Write-Warning "$($site.ddc) could not be contacted"
             }
         }
     }
@@ -151,7 +151,7 @@ function Get-CitrixMetrics {
     end {
         $nl
         foreach ($site in $sites) {
-            Write-Host -ForegroundColor Green "$site"
+            Write-Host -ForegroundColor Green "$($site.name)"
             $metrics.($site.name) | Format-Table
         }
     }
