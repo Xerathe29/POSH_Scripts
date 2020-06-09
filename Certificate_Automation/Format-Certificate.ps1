@@ -1,25 +1,24 @@
 ﻿<#
-    Connects to a specified certificate/key store and generates PFX and PEM files.
-
+ .NOTES
         Version   : 1.1
         Author    : Sid Johnston
         Company   : Concurrent Technologies Corporation
         Created   : 20 February 2020
         
- .Synopsis
+ .SYNOPSIS
   Connects to a specified certificate/key store and generates PFX and PEM files.
   
- .Description
+ .DESCRIPTION
   When the parameter paths are given, the user will be prompted to supply a password for PFX generation.
   Then, PFX and PEM files will be placed in respective folders created in the .CER source file directory.
 
- .Parameter CertPath
+ .PARAMETER CertPath
   Path to folder which contains the .CER source files.
 
- .Parameter KeyPath
+ .PARAMETER KeyPath
   Path to folder which contains the .KEY source files.
 
- .Example   
+ .EXAMPLE   
    Format-Certificate -CertPath C:\temp\CER -KeyPath C:\temp\KEY
 #>
 
