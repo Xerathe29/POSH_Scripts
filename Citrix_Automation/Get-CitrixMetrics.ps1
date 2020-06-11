@@ -129,6 +129,7 @@ function Get-CitrixMetrics {
         Write-Host "======Validating host file entries for Delivery Controllers======" -ForegroundColor Cyan
         foreach ($site in $sites) {
             Set-HostFile -IPaddr $site.ip -Hostname $site.ddc
+            Start-Sleep -Seconds 1
         }
         $nl        
     }
@@ -140,8 +141,7 @@ function Get-CitrixMetrics {
                 Write-Host "Testing that $($site.ddc) is online."
                 Test-Connection -ComputerName $site.ddc -Count 1 -ErrorAction Stop | Out-Null
 
-                Try {
-                    $asp = ($ddc).Remove(5)
+                Try {                    
                     # Gathering raw API data from DDC
                     $sessionSum = Invoke-RestMethod -Uri "http://$($site.ddc)/Citrix/Monitor/OData/v1/Data/SessionActivitySummaries" -Credential $Credential -ErrorAction Stop
                     $connections = Invoke-RestMethod -Uri "http://$($site.ddc)/Citrix/Monitor/OData/v1/Data/Connections" -Credential $Credential -ErrorAction Stop
