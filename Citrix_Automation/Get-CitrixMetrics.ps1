@@ -103,7 +103,7 @@ function Get-CitrixMetrics {
                 Write-Host $IPaddr.PadRight( 20, " " ) "$Hostname - not adding; already in hosts file" -ForegroundColor Red
             } else {
                 Write-Host $IPaddr.PadRight( 20, " " ) "$Hostname - adding to hosts file..." -ForegroundColor Green -NoNewline
-                Add-Content -Encoding UTF8 $hostFilePath ("$IPaddr".PadRight( 20, " " ) + "$Hostname" )
+                Add-Content -Encoding UTF8 $hostFilePath ( "`r`n" + "$IPaddr".PadRight( 20, " " ) + "$Hostname" )
                 Write-Host " done" -ForegroundColor Green
             }
         }
