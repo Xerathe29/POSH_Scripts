@@ -129,6 +129,7 @@ function Get-CitrixMetrics {
         Write-Host "======Validating host file entries for Delivery Controllers======" -ForegroundColor Cyan
         foreach ($site in $sites) {
             Set-HostFile -IPaddr $site.ip -Hostname $site.ddc
+            Start-Sleep -Seconds 1
         }
         $nl        
     }
