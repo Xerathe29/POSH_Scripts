@@ -129,14 +129,3 @@ function Format-Certificate {
         Pause
     }
 }
-
-<#
-######################################CHANGELOG######################################
-20 Feb 2020 - v1.0 created
-30 Mar 2020 - v1.1
-    Feature Improvements: None
-    Bug Fixes:  Removed '-AsSecureString' parameter from Read-Host cmdlet that
-                prompts user to provide a password for PFX generation in order
-                to allow proper password application to generated PFX files.
-######################################CHANGELOG######################################
-#>
