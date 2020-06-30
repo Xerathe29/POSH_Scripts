@@ -61,7 +61,6 @@
   Active_Sessions                5
   Peak_Sessions_Last_24_HRS      9
 #>
-
 function Get-CitrixMetrics {
     [CmdletBinding()]
     param (
@@ -139,7 +138,7 @@ function Get-CitrixMetrics {
             
             Try {
                 Write-Host "Testing that $($site.ddc) is online."
-                Test-Connection -ComputerName $site.ddc -Count 1 -ErrorAction Stop | Out-Null
+                (Test-Connection -ComputerName $site.ddc -Count 1 -ErrorAction Stop) | Out-Null
 
                 Try {                    
                     # Gathering raw API data from DDC
@@ -171,7 +170,7 @@ function Get-CitrixMetrics {
                     foreach ($item in $conSession24) {
                         $peakCon24 += $item.ConcurrentSessionCount.InnerText
                     }
-                    $metrics.($site.name).Peak_Sessions_Last_24_HRS - $peakCon24
+                    $metrics.($site.name).Peak_Sessions_Last_24_HRS = $peakCon24
                     # Creating Active Session Count array to extract latest active sessions
                     $currentSessions = $sessions.Content.Properties | Where-Object { $_.ConnectionState.InnerText -eq 5 }
                     $metrics.($site.name).Active_Sessions = $currentSessions.count
