@@ -25,9 +25,9 @@
   labels for this data must be name, ddc, and ip, respectively. All data must be in String format.
   
   EXAMPLE:
-    name    ddc               ip
-    site01  ddc01.site01.com  10.10.1.1
-    site02  ddc01.site02.com  10.10.2.1 
+    name    ddc               ip         xenAppGUID
+    site01  ddc01.site01.com  10.10.1.1  "135a51s5d-dsh5-fj34-fjsk-ns8wnknaeio8,faskdlfjoasi-8wnq-wqjk-8wn2-asdfhjkasfh"
+    site02  ddc01.site02.com  10.10.2.1  $null
 
  .EXAMPLE
 
@@ -51,6 +51,7 @@
   Total_Connections_Last_7_DAYS  432
   Active_Sessions                15
   Peak_Sessions_Last_24_HRS      21
+  XenApp_Sessions_Last_24_HRS    1
 
   site02
 
@@ -60,6 +61,7 @@
   Total_Connections_Last_7_DAYS  52
   Active_Sessions                5
   Peak_Sessions_Last_24_HRS      9
+  XenApp_Sessions_Last_24_HRS    0
 #>
 function Get-CitrixMetrics {
     [CmdletBinding()]
