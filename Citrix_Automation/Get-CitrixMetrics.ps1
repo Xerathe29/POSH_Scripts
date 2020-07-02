@@ -142,12 +142,10 @@ function Get-CitrixMetrics {
     }
 
     process {
-        foreach ($site in $sites) {
-            
-            Try {
-                Write-Host "Testing that $($site.ddc) is online."
-                (Test-Connection -ComputerName $site.ddc -Count 1 -ErrorAction Stop) | Out-Null
-
+        foreach ($site in $sites) {                        
+            Write-Host "Testing that $($site.ddc) is online."
+            $ping = Test-Connection -ComputerName $site.ddc -Quiet
+            if ($ping) {
                 Try {                    
                     # Gathering raw API data from DDC
                     $sessionSum = Invoke-RestMethod -Uri "http://$($site.ddc)/Citrix/Monitor/OData/v1/Data/SessionActivitySummaries" -Credential $Credential -ErrorAction Stop
@@ -183,22 +181,21 @@ function Get-CitrixMetrics {
                     $currentSessions = $sessions.Content.Properties | Where-Object { $_.ConnectionState.InnerText -eq 5 }
                     $metrics.($site.name).Active_Sessions = $currentSessions.count
                     $xenApp24 = 0
-                    if ($null eq ($config.($site.name).XenAppGUID)) {
-                       Start-Sleep -Seconds 1
+                    if ($null -eq ($config.($site.name).XenAppGUID)) {
+                        Start-Sleep -Seconds 1
                     } else {
-                       foreach ($guid in $config.($site.name).XenAppGUID) {
-                          $XA = $conSession24 | Where-Object { $_.DesktopGroupId.InnerText -eq $guid }
-                          $xenApp24 += $XA.TotalLogonCount.InnerText
-                       }
+                        foreach ($guid in $config.($site.name).XenAppGUID) {
+                            $XA = $conSession24 | Where-Object { $_.DesktopGroupId.InnerText -eq $guid }
+                            $xenApp24 += $XA.TotalLogonCount.InnerText
+                        }
                     }
                     $metrics.($site.name).XenApp_Sessions_Last_24_HRS = $xenApp24
                 }
                 Catch {
                     Write-Host -ForegroundColor Yellow "Error retrieving data from $($site.ddc). Please check credentials."
                 }
-            }
-            Catch [System.Net.NetworkInformation.PingException] {
-                Write-Warning "$($site.ddc) could not be contacted"
+            } else {
+                Write-Host "Unable to reach $($site.ddc). Confirm you have a valid route to the host." -ForegroundColor Yellow
             }
         }
     }
