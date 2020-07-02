@@ -106,12 +106,11 @@ function Get-CitrixMetrics {
                 Write-Host " done" -ForegroundColor Green
             }
         }
-
+        # Import data from CSV
         $SiteConfig = $PSBoundParameters.SiteConfig
         $sites = Import-Csv -Path "$SiteConfig"
-        
+        # Create object to store Citrix Metrics
         $metrics = @{}
-
         foreach ($site in $sites) {
             $metrics += @{
                 $site.name = @{
@@ -119,10 +118,19 @@ function Get-CitrixMetrics {
                     Total_Connections_Last_7_DAYS = ""
                     Peak_Sessions_Last_24_HRS = ""
                     Active_Sessions = ""
+                    XenApp_Sessions_Last_24_HRS = ""
                 }
             }
         }
-
+        # Create object to store XenApp GUIDs
+        $config = @{}
+        foreach ($site in $sites) {
+           $config += @{
+              $site.name = @{
+                 xenAppGUID = @(if($site.xenAppGUID -match ","){($site.xenAppGUID.Split(","))} else{$site.xenAppGUID})
+              }
+           }
+        }
         $nl
         # Ensure hosts file is configured for connections to Delivery Controllers.
         Write-Host "======Validating host file entries for Delivery Controllers======" -ForegroundColor Cyan
@@ -174,6 +182,16 @@ function Get-CitrixMetrics {
                     # Creating Active Session Count array to extract latest active sessions
                     $currentSessions = $sessions.Content.Properties | Where-Object { $_.ConnectionState.InnerText -eq 5 }
                     $metrics.($site.name).Active_Sessions = $currentSessions.count
+                    $xenApp24 = 0
+                    if ($null eq ($config.($site.name).XenAppGUID)) {
+                       Start-Sleep -Seconds 1
+                    } else {
+                       foreach ($guid in $config.($site.name).XenAppGUID) {
+                          $XA = $conSession24 | Where-Object { $_.DesktopGroupId.InnerText -eq $guid }
+                          $xenApp24 += $XA.TotalLogonCount.InnerText
+                       }
+                    }
+                    $metrics.($site.name).XenApp_Sessions_Last_24_HRS = $xenApp24
                 }
                 Catch {
                     Write-Host -ForegroundColor Yellow "Error retrieving data from $($site.ddc). Please check credentials."
